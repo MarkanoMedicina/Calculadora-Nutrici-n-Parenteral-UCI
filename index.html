@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NP Calculator">
+    <meta name="theme-color" content="#0A4D68">
+    <meta name="author" content="Dr. Edgard Marcano-Millán - Hospital Universitario de Salamanca">
+    <title>Calculadora Nutrición Parenteral v3.0</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+        
+        :root {
+            --primary: #0A4D68;
+            --primary-light: #05C3DD;
+            --primary-dark: #083042;
+            --accent: #FF6B6B;
+            --success: #05C3DD;
+            --warning: #FFD93D;
+            --bg-gradient: linear-gradient(135deg, #0A4D68 0%, #05C3DD 100%);
+            --card-bg: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666;
+            --border-color: #e0e0e0;
+            --shadow-sm: 0 2px 8px rgba(10, 77, 104, 0.08);
+            --shadow-md: 0 4px 16px rgba(10, 77, 104, 0.12);
+            --shadow-lg: 0 8px 32px rgba(10, 77, 104, 0.16);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f7fa;
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 140px;
+        }
+        
+        .header {
+            background: var(--bg-gradient);
+            color: white;
+            padding: max(env(safe-area-inset-top), 20px) 20px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .header-content { max-width: 1200px; margin: 0 auto; }
+        
+        .header h1 {
+            font-size: clamp(18px, 5vw, 24px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header-icon {
+            width: 28px; height: 28px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .header p { font-size: 11px; opacity: 0.9; font-weight: 300; }
+        
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.3);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        .tabs {
+            display: flex; gap: 5px; margin-bottom: 24px;
+            background: white; padding: 5px; border-radius: 12px;
+            box-shadow: var(--shadow-sm); overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .tabs::-webkit-scrollbar { display: none; }
+        
+        .tab {
+            flex: 1; min-width: 75px; padding: 9px 10px;
+            border: none; background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px; font-weight: 600;
+            border-radius: 8px; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+        
+        .tab.active { background: var(--primary); color: white; box-shadow: var(--shadow-sm); }
+        
+        .tab-content { display: none; animation: fadeIn 0.4s ease-out; }
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: var(--card-bg); border-radius: 16px; padding: 24px;
+            margin-bottom: 20px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .card:hover { box-shadow: var(--shadow-md); }
+        
+        .card-header {
+            font-size: 17px; font-weight: 700; color: var(--primary);
+            margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+        }
+        
+        .card-icon {
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            border-radius: 8px; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 15px; color: white;
+        }
+        
+        .form-group { margin-bottom: 18px; }
+        
+        .form-label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 8px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        
+        .form-input, .form-select {
+            width: 100%; padding: 13px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px; font-size: 15px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease; background: white;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(10, 77, 104, 0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .chart-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);
+        }
+        
+        .chart-title {
+            font-size: 15px; font-weight: 700; color: var(--primary);
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+        
+        .chart-container { position: relative; height: 220px; }
+        
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 14px;
+            margin: 24px 0;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 12px; padding: 18px;
+            border-left: 4px solid var(--primary);
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+        
+        .stat-value {
+            font-size: 30px; font-weight: 700; color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1; margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 11px; color: var(--text-secondary);
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        
+        .stat-sublabel { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+        
+        .result-grid { display: grid; gap: 12px; margin-top: 20px; }
+        
+        .result-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            padding: 15px; border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .result-label { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+        
+        .result-value {
+            font-size: 19px; font-weight: 700; color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .result-unit { font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-left: 4px; }
+        
+        .alert {
+            padding: 15px 18px; border-radius: 12px; margin-bottom: 14px;
+            display: flex; align-items: flex-start; gap: 12px;
+            font-size: 13px; line-height: 1.5;
+        }
+        
+        .alert-icon {
+            flex-shrink: 0; width: 22px; height: 22px;
+            border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-size: 13px;
+        }
+        
+        .alert-warning { background: #FFF3CD; border: 1px solid #FFE69C; color: #856404; }
+        .alert-warning .alert-icon { background: var(--warning); color: #856404; }
+        
+        .alert-danger { background: #F8D7DA; border: 1px solid #F5C2C7; color: #842029; }
+        .alert-danger .alert-icon { background: var(--accent); color: white; }
+        
+        .alert-success { background: #D1ECF1; border: 1px solid #BEE5EB; color: #0C5460; }
+        .alert-success .alert-icon { background: var(--success); color: white; }
+        
+        .alert-info { background: #E7F3FF; border: 1px solid #B3D9FF; color: #004085; }
+        .alert-info .alert-icon { background: var(--primary-light); color: white; }
+        
+        .prescription-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 16px; }
+        
+        .prescription-table th {
+            background: var(--primary); color: white; padding: 11px;
+            text-align: left; font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        
+        .prescription-table th:first-child { border-radius: 8px 0 0 0; }
+        .prescription-table th:last-child { border-radius: 0 8px 0 0; }
+        
+        .prescription-table td { padding: 13px 11px; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+        .prescription-table tr:last-child td { border-bottom: none; }
+        .prescription-table tr:hover { background: #f8f9fa; }
+        
+        .prescription-table .numeric {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600; color: var(--primary);
+        }
+        
+        .btn {
+            width: 100%; padding: 15px 22px; border: none;
+            border-radius: 12px; font-size: 15px; font-weight: 600;
+            font-family: 'Outfit', sans-serif; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        
+        .btn-primary { background: var(--bg-gradient); color: white; box-shadow: var(--shadow-md); }
+        .btn-primary:active { transform: scale(0.98); box-shadow: var(--shadow-sm); }
+        
+        .btn-secondary { background: white; color: var(--primary); border: 2px solid var(--primary); }
+        
+        .bottom-section {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; border-top: 1px solid var(--border-color);
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08); z-index: 100;
+        }
+        
+        .bottom-nav {
+            max-width: 1200px; margin: 0 auto;
+            padding: 12px 20px;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .footer-content {
+            max-width: 1200px; margin: 0 auto;
+            text-align: center; font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .footer-author {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+        
+        .footer-hospital { font-size: 10px; }
+        
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.95); display: none;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        
+        .loading-overlay.active { display: flex; }
+        
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .badge {
+            display: inline-block; padding: 3px 10px;
+            border-radius: 20px; font-size: 10px;
+            font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-left: 6px;
+        }
+        
+        .badge-semicyuc { background: #D1ECF1; color: #0C5460; }
+        .badge-new { background: #FFE69C; color: #856404; }
+        .badge-trr { background: #FF6B6B; color: white; }
+        .badge-nutric-alto { background: #FFD93D; color: #856404; }
+        .badge-nutric-bajo { background: #D1ECF1; color: #0C5460; }
+        .badge-farma { background: #FF6B6B; color: white; }
+        
+        .calculator-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 12px; padding: 20px; margin-bottom: 16px;
+            border: 2px solid var(--border-color);
+        }
+        
+        .calculator-title {
+            font-size: 15px; font-weight: 700;
+            color: var(--primary); margin-bottom: 14px;
+        }
+        
+        .calculator-result {
+            background: white; padding: 14px;
+            border-radius: 8px; margin-top: 12px;
+            border-left: 4px solid var(--success);
+        }
+        
+        .score-badge {
+            display: inline-flex; align-items: center;
+            justify-content: center; width: 55px; height: 55px;
+            border-radius: 50%; font-size: 26px; font-weight: 700;
+            font-family: 'JetBrains Mono', monospace; margin-right: 14px;
+        }
+        
+        .score-alto { background: var(--accent); color: white; }
+        .score-bajo { background: var(--success); color: white; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="header">
+        <div class="header-content">
+            <h1>
+                <span class="header-icon">💉</span>
+                Nutrición Parenteral
+                <span class="version-badge">v3.0</span>
+            </h1>
+            <p>ESPEN/ASPEN/SEMICYUC 2023 + Calculadoras Avanzadas</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" data-tab="datos">📋 Datos</button>
+            <button class="tab" data-tab="calculadoras">🧮 Calcs</button>
+            <button class="tab" data-tab="dashboard">📊 Dashboard</button>
+            <button class="tab" data-tab="calculos">⚗️ Detalles</button>
+            <button class="tab" data-tab="prescripcion">📝 RX</button>
+            <button class="tab" data-tab="alertas">⚠️ Alertas</button>
+        </div>
+
+        <!-- TABS CONTENT will be loaded by JavaScript -->
+        <div id="appContent"></div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="bottom-nav">
+            <button class="btn btn-primary" id="calcularBtn">
+                <span>🧮</span>
+                <span>Calcular Prescripción</span>
+            </button>
+        </div>
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-author">
+                    Dr. Edgard Marcano-Millán
+                </div>
+                <div class="footer-hospital">
+                    Hospital Universitario de Salamanca · UCI
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
